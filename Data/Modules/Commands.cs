@@ -452,12 +452,19 @@ namespace amblflecasm.Data.Modules
 				return;
 			}
 
-			await this.RespondAsync("Booming " + guildTarget.DisplayName + " " + amount + " time" + (amount == 1 ? "" : "s"));
+			await this.RespondAsync("Booming `" + guildTarget.DisplayName + "` " + amount + " time" + (amount == 1 ? "" : "s"));
 
 			for (int i = 1; i <= amount; i++)
 			{
-				await guildTarget.SendMessageAsync("https://tenor.com/view/vineboom-ilybeeduo-gif-23126674");
-				await Task.Delay(750);
+				try
+				{
+					await guildTarget.SendMessageAsync("https://tenor.com/view/vineboom-ilybeeduo-gif-23126674");
+					await Task.Delay(750);
+				}
+				catch (Exception)
+				{
+					break;
+				}
 			}
 
 			IUserMessage message = await this.GetOriginalResponseAsync();
