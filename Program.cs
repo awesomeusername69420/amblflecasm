@@ -23,8 +23,8 @@ namespace amblflecasm
 		private IServiceProvider services;
 
 		private DiscordSocketConfig config;
-		private DiscordSocketClient client;
-		public static InteractionService interactionService; // Having to make some things static is retarded!!
+		public static DiscordSocketClient client; // Having to make some things static is retarded!!
+		public static InteractionService interactionService;
 
 		private static dynamic configData;
 		private Dictionary<ulong, string> tjelcLookups;
@@ -127,10 +127,22 @@ namespace amblflecasm
 
 				if (content.Equals(string.Empty)) return;
 
-				DiscordWebhookClient thiswh = new DiscordWebhookClient(tjelcLookups[userMessage.Channel.Id]);
+				DiscordWebhookClient thiswh = null;
 
-				await thiswh.SendMessageAsync(content, false, userMessage.Embeds, userMessage.Author.Username, userMessage.Author.GetAvatarUrl(), null, new AllowedMentions(AllowedMentionTypes.None));
-				await userMessage.DeleteAsync();
+				try
+				{
+					thiswh = new DiscordWebhookClient(tjelcLookups[userMessage.Channel.Id]);
+				}
+				catch (Exception) { }
+
+				if (thiswh == null) return;
+
+				try
+				{
+					await thiswh.SendMessageAsync(content, false, userMessage.Embeds, userMessage.Author.Username, userMessage.Author.GetAvatarUrl(), null, new AllowedMentions(AllowedMentionTypes.None));
+					await userMessage.DeleteAsync();
+				}
+				catch (Exception) { }
 
 				thiswh.Dispose();
 			}
@@ -142,13 +154,23 @@ namespace amblflecasm
 
 			if (userflags == 1) // 1 << 0
 			{
-				await(user as IGuildUser).BanAsync(0, "Discord Staff Member", null);
+				try
+				{
+					await (user as IGuildUser).BanAsync(0, "Discord Staff Member", null);
+				}
+				catch (Exception) { }
+				
 				return;
 			}
 
 			if (userflags == 2) // 1 << 1
 			{
-				await(user as IGuildUser).BanAsync(0, "Discord Partner", null);
+				try
+				{
+					await (user as IGuildUser).BanAsync(0, "Discord Partner", null);
+				}
+				catch (Exception) { }
+				
 				return;
 			}
 		}

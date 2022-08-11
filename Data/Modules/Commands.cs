@@ -432,7 +432,7 @@ namespace amblflecasm.Data.Modules
 		[SlashCommand("boom", "Vine BOOM", false, RunMode.Async)]
 		public async Task Boom(SocketUser target, int amount = 10)
 		{
-			if (target == null)
+			if (target == null || target.Id == Program.client.CurrentUser.Id)
 			{
 				await this.RespondAsync("https://tenor.com/view/staring-black-man-staring-black-men-staring-black-men-men-staring-gif-25096788");
 				return;
@@ -440,13 +440,13 @@ namespace amblflecasm.Data.Modules
 
 			if (amount < 1)
 			{
-				await this.RespondAsync("Invalid number entered, must be > 0");
+				await this.RespondAsync("Invalid number entered, must be > 0.");
 				return;
 			}
 
 			IGuildUser guildTarget = target as IGuildUser;
 
-			if (guildTarget == null)
+			if (guildTarget == null || guildTarget.Id == Program.client.CurrentUser.Id)
 			{
 				await this.RespondAsync("404: Member not found in guild.");
 				return;
@@ -454,7 +454,9 @@ namespace amblflecasm.Data.Modules
 
 			await this.RespondAsync("Booming `" + guildTarget.DisplayName + "` " + amount + " time" + (amount == 1 ? "" : "s"));
 
-			for (int i = 1; i <= amount; i++)
+			int timeboomed = 0;
+
+			for (int i = 1; i <= amount; i++, timeboomed++)
 			{
 				try
 				{
@@ -468,7 +470,7 @@ namespace amblflecasm.Data.Modules
 			}
 
 			IUserMessage message = await this.GetOriginalResponseAsync();
-			await message.ModifyAsync(message => message.Content = "Vine BOOM!");
+			await message.ModifyAsync(message => message.Content = "Vine BOOM! `" + timeboomed + "`");
 		}
 	}
 }
