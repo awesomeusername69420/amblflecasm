@@ -16,7 +16,7 @@ namespace amblflecasm
 {
 	internal class Program
 	{
-		public static bool DEBUGMODE = true;
+		public static bool DEBUGMODE = false;
 
 		public static Task Main() => new Program().MainAsync();
 

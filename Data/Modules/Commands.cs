@@ -428,5 +428,40 @@ namespace amblflecasm.Data.Modules
 				catch (Exception) { }
 			}
 		}
+
+		[SlashCommand("boom", "Vine BOOM", false, RunMode.Async)]
+		public async Task Boom(SocketUser target, int amount = 10)
+		{
+			if (target == null)
+			{
+				await this.RespondAsync("https://tenor.com/view/staring-black-man-staring-black-men-staring-black-men-men-staring-gif-25096788");
+				return;
+			}
+
+			if (amount < 1)
+			{
+				await this.RespondAsync("Invalid number entered, must be > 0");
+				return;
+			}
+
+			IGuildUser guildTarget = target as IGuildUser;
+
+			if (guildTarget == null)
+			{
+				await this.RespondAsync("404: Member not found in guild.");
+				return;
+			}
+
+			await this.RespondAsync("Booming " + guildTarget.DisplayName + " " + amount + " time" + (amount == 1 ? "" : "s"));
+
+			for (int i = 1; i <= amount; i++)
+			{
+				await guildTarget.SendMessageAsync("https://tenor.com/view/vineboom-ilybeeduo-gif-23126674");
+				await Task.Delay(750);
+			}
+
+			IUserMessage message = await this.GetOriginalResponseAsync();
+			await message.ModifyAsync(message => message.Content = "Vine BOOM!");
+		}
 	}
 }
