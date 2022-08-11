@@ -1,4 +1,4 @@
-.NET v4.8
+.NET v4.8 \
 C# v8.0
 
 NuGet Packages:
