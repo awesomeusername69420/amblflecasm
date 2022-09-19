@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using System;
 using System.Net;
 using System.Threading.Tasks;
+using Whois.NET;
 
 namespace amblflecasm.Data.Modules
 {
@@ -201,6 +202,36 @@ namespace amblflecasm.Data.Modules
 			catch (Exception)
 			{
 				await this.RespondAsync("Failed to parse IP");
+			}
+		}
+
+		[SlashCommand("whois", "Whois Lookup", false, RunMode.Async)]
+		public async Task WhoIs(string ipORurl = "")
+		{
+			if (ipORurl.Equals(string.Empty))
+			{
+				await this.RespondAsync("https://tenor.com/view/staring-black-man-staring-black-men-staring-black-men-men-staring-gif-25096788");
+				return;
+			}
+
+			try
+			{
+				WhoisResponse response = await WhoisClient.QueryAsync(ipORurl);
+
+				EmbedBuilder emb = new EmbedBuilder
+				{
+					Title = "Whois Lookup for " + ipORurl,
+					Color = Color.Red
+				};
+
+				emb.AddField("Organization Name", response.OrganizationName ?? "Unknown");
+				emb.AddField("IP Range", (response.AddressRange?.Begin.ToString() ?? "Unknown") + " - " + (response.AddressRange?.End.ToString() ?? "Unknown"));
+				emb.AddField("Responded Servers", string.Join(" > ", response.RespondedServers) ?? "Unknown");
+
+				await this.RespondAsync(null, new Embed[] { emb.Build() });
+			} catch (Exception)
+			{
+				await this.RespondAsync("Failed to parse data");
 			}
 		}
 
@@ -432,6 +463,12 @@ namespace amblflecasm.Data.Modules
 		[SlashCommand("boom", "Vine BOOM", false, RunMode.Async)]
 		public async Task Boom(SocketUser target, int amount = 10)
 		{
+			if (!Program.IsUserLeme(this.Context.User))
+			{
+				await this.RespondAsync("leme only");
+				return;
+			}
+
 			if (target == null || target.Id == Program.client.CurrentUser.Id)
 			{
 				await this.RespondAsync("https://tenor.com/view/staring-black-man-staring-black-men-staring-black-men-men-staring-gif-25096788");
