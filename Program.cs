@@ -219,7 +219,7 @@ namespace amblflecasm
 
 			config = new DiscordSocketConfig
 			{
-				GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers | GatewayIntents.GuildMessages,
+				GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers | GatewayIntents.GuildMessages | GatewayIntents.MessageContent,
 				AlwaysDownloadUsers = true
 			};
 

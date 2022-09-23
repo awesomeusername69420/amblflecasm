@@ -8,7 +8,7 @@ Nuget Packages:
  - Discord.Net.Rest 3.8.1.0
  - Discord.Net.Webhook 3.8.1.0
  - Discord.Net.WebSocket 3.8.1.0
- - IPAddressRange 3.2.0.0
+ - IPAddressRange 4.2.0.0
  - IPinfo 2.0.2.0
  - Microsoft.Bcl.AsyncInterfaces 6.0.0.0
  - Microsoft.Extensions.DependencyInjection 6.0.0.0
