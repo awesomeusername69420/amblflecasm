@@ -1,6 +1,9 @@
 {
-	"MaxTimeoutLength": 648,
-	"leland": "",
+	"Servers": [
+		{
+			"le land": ""
+		}
+	],
 
 	"Tokens": [
 		{
@@ -20,13 +23,17 @@
 		}
 	],
 
-	"TJELC": [
+	"Webhooks": [
 		{
-			"": ""
+			
 		}
 	],
 
-	"lemes": [
-		"",
+	"Users": [
+		{
+			"leme": [
+				
+			]
+		}
 	]
 }

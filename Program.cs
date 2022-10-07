@@ -1,59 +1,39 @@
-﻿using Discord;
-using Discord.Interactions;
-using Discord.Webhook;
+﻿using System;
+using Discord;
 using Discord.WebSocket;
-using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Discord.Interactions;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using System.IO;
+using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
+using Discord.Webhook;
 
 namespace amblflecasm
 {
 	internal class Program
 	{
-		public static bool DEBUGMODE = false;
-
 		public static Task Main() => new Program().MainAsync();
 
-		private IServiceProvider services;
+		public static bool DEBUG_MODE = false;
 
-		private DiscordSocketConfig config;
-		public static DiscordSocketClient client; // Having to make some things static is retarded!!
+		private IServiceProvider serviceProvider;
+		private DiscordSocketConfig socketConfig;
+		public static DiscordSocketClient socketClient;
 		public static InteractionService interactionService;
+		private static dynamic configData = null; // I don't like this being a dynamic but anything else throws errors
 
-		private static dynamic configData;
-		private Dictionary<ulong, string> tjelcLookups;
+		public static Random rng;
+		private Dictionary<ulong, string> webhookLookups = null;
+		private Dictionary<int, string> userFlagLookups;
+		private static List<string> denials;
 
-		//
-
-		public static bool IsUserLeme(SocketUser socketUser)
-		{
-			try
-			{
-				JArray jlemes = (JArray)Program.GetConfigData("lemes");
-
-				foreach (ulong id in jlemes.ToObject<List<ulong>>())
-					if (socketUser.Id == id) return true;
-
-				return false;
-			}
-			catch (Exception)
-			{
-				return false;
-			}
-		}
-
-		public static DateTime EpochToDateTime(dynamic etime)
-		{
-			return DateTimeOffset.FromUnixTimeSeconds((long)etime).DateTime;
-		}
-
-		//
+		/*
+		 * Config Setup
+		 */
 
 		public Task DeserializeConfig()
 		{
@@ -62,19 +42,19 @@ namespace amblflecasm
 				using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("amblflecasm.Data.Config.json"))
 					using (StreamReader sr = new StreamReader(s))
 						configData = JsonConvert.DeserializeObject(sr.ReadToEnd());
-			}
-			catch (Exception) { }
 
-			return Task.CompletedTask;
+				return Task.CompletedTask;
+			} catch (Exception)
+			{
+				return Task.FromResult(false);
+			}
 		}
 
-#nullable enable // Fucking stupid
-
-		public static bool ObjectIsJArray(object? o)
+#nullable enable // Dumb as hell
+		public static bool ObjectIsJArray(object? obj)
 		{
-			if (o == null) return false;
-
-			return o.GetType().IsAssignableFrom(typeof(JArray));
+			if (obj == null) return false;
+			return obj.GetType().IsAssignableFrom(typeof(JArray));
 		}
 
 		public static object? GetConfigData(params string[] keys)
@@ -84,170 +64,263 @@ namespace amblflecasm
 
 			while (ObjectIsJArray(obj) && nextIndex < keys.Length)
 			{
-				foreach (JObject jobj in (JArray)obj)
-					foreach (JProperty p in jobj.Properties())
-						if (p.Name.Equals(keys[nextIndex]))
+				foreach (JObject jobject in (JArray)obj)
+					foreach (JProperty jproperty in jobject.Properties())
+						if (jproperty.Name.Equals(keys[nextIndex]))
 						{
-							obj = p.Value;
+							obj = jproperty.Value;
 							break;
 						}
+
 
 				nextIndex++;
 			}
 
 			return obj;
 		}
-
 #nullable disable
 
-		// Client tasks
+		/*
+		 * Globals
+		 */
 
-		public Task ClientLog(LogMessage msg)
+		public static string AutoPlural(string message, int x)
 		{
-			Console.WriteLine(msg.ToString());
+			return x == 1 ? message : message + "s";
+		}
+
+		public static string GetRandomDenial()
+		{
+			return denials[rng.Next(denials.Count)];
+		}
+
+		public static bool IsUserLeme(SocketUser socketUser)
+		{
+			if (socketUser == null) return false;
+
+			try
+			{
+				JArray lemes = (JArray)GetConfigData("Users", "leme");
+				List<ulong> ulemes = lemes.ToObject<List<ulong>>();
+
+				foreach (ulong id in ulemes)
+					if (socketUser.Id == id) return true;
+
+				return false;
+			} catch (Exception)
+			{
+				return false;
+			}
+		}
+
+		public Task UpdateWebhooks()
+		{
+			if (webhookLookups == null)
+				webhookLookups = new Dictionary<ulong, string>();
+			else
+				webhookLookups.Clear();
+
+			JArray webhooks = (JArray)GetConfigData("Webhooks");
+			foreach (JObject jobject in webhooks)
+				foreach (JProperty jproperty in jobject.Properties())
+				{
+					ulong ID;
+
+					if (!ulong.TryParse(jproperty.Name, out ID))
+					{
+						Log("Failed to register webhook '" + jproperty.Name + "'", "UpdateWebhooks");
+						continue;
+					}
+
+					webhookLookups.Add(ID, jproperty.Value.ToString());
+				}
+
 			return Task.CompletedTask;
 		}
 
-		public async Task ClientMessageReceivedHandler(SocketMessage message)
+		/*
+		 * Client Tasks
+		 */
+
+		public Task ClientLogHandler(LogMessage message)
 		{
-			SocketUserMessage userMessage = message as SocketUserMessage;
-
-			if (userMessage == null) return; // Wtf
-			if (userMessage.Author.IsBot) return;
-
-			if (tjelcLookups.ContainsKey(userMessage.Channel.Id))
-			{
-				string content = string.Empty;
-
-				if (!userMessage.Content.Equals(string.Empty))
-					content = userMessage.Content;
-				else
-					foreach (Attachment a in userMessage.Attachments)
-						content = content + a.Url + "\n";
-
-				if (content.Equals(string.Empty)) return;
-
-				DiscordWebhookClient thiswh = null;
-
-				try
-				{
-					thiswh = new DiscordWebhookClient(tjelcLookups[userMessage.Channel.Id]);
-				}
-				catch (Exception) { }
-
-				if (thiswh == null) return;
-
-				try
-				{
-					await thiswh.SendMessageAsync(content, false, userMessage.Embeds, userMessage.Author.Username, userMessage.Author.GetAvatarUrl(), null, new AllowedMentions(AllowedMentionTypes.None));
-					await userMessage.DeleteAsync();
-				}
-				catch (Exception) { }
-
-				thiswh.Dispose();
-			}
+			Console.WriteLine(message.ToString());
+			return Task.CompletedTask;
 		}
 
-		public async Task ClientUserJoinedHandler(SocketUser user)
+		public void Log(string message, string source = "Unknown", LogSeverity severity = LogSeverity.Info) // Quick and easy way to log something
 		{
-			int? userflags = (int?)user.PublicFlags;
-
-			if (userflags == 1) // 1 << 0
-			{
-				try
-				{
-					await (user as IGuildUser).BanAsync(0, "Discord Staff Member", null);
-				}
-				catch (Exception) { }
-				
-				return;
-			}
-
-			if (userflags == 2) // 1 << 1
-			{
-				try
-				{
-					await (user as IGuildUser).BanAsync(0, "Discord Partner", null);
-				}
-				catch (Exception) { }
-				
-				return;
-			}
+			ClientLogHandler(new LogMessage(severity, source, message));
 		}
 
 		public Task ClientReadyHandler()
 		{
-			// Register Commands
-
-			if (DEBUGMODE)
-				interactionService.RegisterCommandsToGuildAsync(ulong.Parse(GetConfigData("leland").ToString()), true);
+			if (DEBUG_MODE)
+				Log("Registering commands to le land", "ClientReadyHandler");
 			else
-				interactionService.RegisterCommandsGloballyAsync();
+				Log("Registering commands globally", "ClientReadyHandler");
 
-			return Task.CompletedTask;
+			try
+			{
+				if (DEBUG_MODE) // Stupid 24 hour global cache cooldown trash
+				{
+					string stringID = GetConfigData("Servers", "le land").ToString();
+					ulong ulongID = ulong.Parse(stringID);
+
+					interactionService.RegisterCommandsToGuildAsync(ulongID, true);
+				}
+				else
+					interactionService.RegisterCommandsGloballyAsync(true);
+
+				Log("Registered commands", "ClientReadyHandler");
+				return Task.CompletedTask;
+			} catch (Exception)
+			{
+				Log("Failed to register commands", "ClientReadyHandler", LogSeverity.Critical);
+				return Task.FromResult(false);
+			}
 		}
 
-		public async Task ClientInteractionCreatedHandler(SocketInteraction interaction)
+		public async Task ClientInteractionHandler(SocketInteraction interaction)
 		{
 			try
 			{
-				await interactionService.ExecuteCommandAsync(new SocketInteractionContext(client, interaction), services);
+				IResult result = await interactionService.ExecuteCommandAsync(new SocketInteractionContext(socketClient, interaction), serviceProvider);
+
+				if (!result.IsSuccess)
+					try
+					{
+						await interaction.RespondAsync("Something broke. Dumbfuck leme");
+					}
+					catch (Exception) { }
+					
+			} catch (Exception ex)
+			{
+				try
+				{
+					await interaction.RespondAsync("Something broke. Dumbfuck leme");
+				}
+				catch (Exception) { }
+			}
+		}
+
+		public async Task ClientMessageReceivedHandler(SocketMessage message)
+		{
+			try
+			{
+				SocketUserMessage socketUserMessage = message as SocketUserMessage;
+				if (socketUserMessage == null || socketUserMessage.Author.IsBot) return;
+
+				if (webhookLookups.ContainsKey(socketUserMessage.Channel.Id))
+				{
+					string content = socketUserMessage.Content;
+					if (content.Equals(string.Empty) && socketUserMessage.Attachments.Count < 1 && socketUserMessage.Embeds.Count < 1) return; // If no text and no files then seethe and mald
+
+					DiscordWebhookClient webhookClient = new DiscordWebhookClient(webhookLookups[socketUserMessage.Channel.Id]);
+
+					if (!content.Equals(string.Empty))
+						await webhookClient.SendMessageAsync(content, false, socketUserMessage.Embeds, socketUserMessage.Author.Username, socketUserMessage.Author.GetAvatarUrl(), null, AllowedMentions.None);
+
+					if (socketUserMessage.Attachments.Count > 0) // Send another message containing attachment urls
+					{
+						string attachmentMessage = string.Empty;
+
+						foreach (Attachment attachment in socketUserMessage.Attachments)
+							attachmentMessage = attachmentMessage + attachment.Url + "\n";
+
+						await webhookClient.SendMessageAsync(attachmentMessage, false, null, socketUserMessage.Author.Username, socketUserMessage.Author.GetAvatarUrl(), null, AllowedMentions.None);
+					}
+
+					await socketUserMessage.DeleteAsync();
+
+					webhookClient.Dispose();
+				}
+			}
+			catch (Exception) { }
+		}
+
+		public async Task ClientUserJoinedHandler(SocketUser user) // Disallow the officials, we don't run with the law
+		{
+			try
+			{
+				IGuildUser guildUser = user as IGuildUser;
+				if (guildUser == null) return;
+
+				int? nullableUserFlags = (int?)user.PublicFlags;
+
+				if (nullableUserFlags.HasValue)
+				{
+					int userFlags = nullableUserFlags.Value;
+
+					foreach (KeyValuePair<int, string> kvp in userFlagLookups)
+						if ((userFlags & kvp.Key) != 0)
+						{
+							await guildUser.BanAsync(0, kvp.Value);
+							break;
+						}
+				}
 			}
 			catch (Exception) { }
 		}
 
 		public async Task MainAsync()
 		{
-			// Initialize Config
-
 			await DeserializeConfig();
 
 			if (configData == null)
 			{
-				Console.WriteLine("FALED TO READ CONFIG DATA");
-				Console.ReadLine();
-				Environment.Exit(-1);
+				Log("Failed to deserialize config", "MainAsync", LogSeverity.Critical);
+				return;
 			}
 
-			tjelcLookups = new Dictionary<ulong, string>();
+			rng = new Random();
 
-			foreach (JObject obj in (JArray)GetConfigData("TJELC"))
-				foreach (JProperty p in obj.Properties())
-					tjelcLookups.Add(ulong.Parse(p.Name), p.Value.ToString());
+			await UpdateWebhooks();
 
-			// Setup Bot Config
-
-			config = new DiscordSocketConfig
+			userFlagLookups = new Dictionary<int, string>() // Access is denied
 			{
-				GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers | GatewayIntents.GuildMessages | GatewayIntents.MessageContent,
+				{ 0x1, "Discord Staff Member" },
+				{ 0x2, "Discord Partner" },
+				{ 0x1000, "Discord System" },
+				{ 0x40000, "Discord Verified Moderator" }
+			};
+
+			denials = new List<string>()
+			{
+				"No",
+				"Nuh uh",
+				"No thanks",
+				"Access is denied",
+				"Can't make me",
+				"I will do no such thing",
+				"Nada",
+				"Nah",
+				"Nop"
+			};
+
+			socketConfig = new DiscordSocketConfig
+			{
+				GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers | GatewayIntents.GuildMessages | GatewayIntents.MessageContent, // Why do you need so many this gateway intent shit is retarded
 				AlwaysDownloadUsers = true
 			};
 
-			// Setup client and services
-
-			client = new DiscordSocketClient(config);
-
-			interactionService = new InteractionService(client);
-
-			services = new ServiceCollection()
-				.AddSingleton(client)
+			socketClient = new DiscordSocketClient(socketConfig);
+			interactionService = new InteractionService(socketClient);
+			serviceProvider = new ServiceCollection()
+				.AddSingleton(socketClient)
 				.AddSingleton(interactionService)
 				.BuildServiceProvider();
 
-			client.Log += ClientLog;
-			client.MessageReceived += ClientMessageReceivedHandler;
-			client.UserJoined += ClientUserJoinedHandler;
-			client.Ready += ClientReadyHandler;
-			client.InteractionCreated += ClientInteractionCreatedHandler;
+			socketClient.Log += ClientLogHandler;
+			socketClient.Ready += ClientReadyHandler;
+			socketClient.InteractionCreated += ClientInteractionHandler;
+			socketClient.MessageReceived += ClientMessageReceivedHandler;
+			socketClient.UserJoined += ClientUserJoinedHandler;
 
-			// Initialize Commands
+			await interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), serviceProvider);
 
-			await interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), services);
-
-			// Login
-
-			await client.LoginAsync(TokenType.Bot, GetConfigData("Tokens", "Bot").ToString());
-			await client.StartAsync();
+			await socketClient.LoginAsync(TokenType.Bot, GetConfigData("Tokens", "Bot").ToString());
+			await socketClient.StartAsync();
 
 			await Task.Delay(Timeout.Infinite);
 		}
