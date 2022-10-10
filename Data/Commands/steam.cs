@@ -103,7 +103,7 @@ namespace amblflecasm.Data.Commands
 				embedBuilder.AddField("Steam Data", string.Format(@"
 Nickname: `{0}`
 Real Name: `{1}`
-Profile URL: `{2}`
+Profile URL: {2}
 Date Created: `{3}`
 Status: `{4}`",
 				
