@@ -45,7 +45,15 @@ namespace amblflecasm.Data.Commands
 				}
 
 			embedBuilder.Title = "Finished";
-			embedBuilder.Color = booms > 0 ? Color.Green : Color.Red;
+
+			if (booms > 0)
+				if (booms == amount)
+					embedBuilder.Color = Color.Green;
+				else
+					embedBuilder.Color = Color.Orange;
+			else
+				embedBuilder.Color = Color.Red;
+
 			embedBuilder.Description = string.Format("Boomed {0} {1} {2}", guildTarget.Username, booms, Program.AutoPlural("time", booms));
 
 			await this.ModifyOriginalResponseAsync(message => message.Embed = embedBuilder.Build());

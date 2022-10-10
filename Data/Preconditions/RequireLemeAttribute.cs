@@ -1,6 +1,4 @@
-﻿using Discord;
-using Discord.Interactions;
-using Discord.WebSocket;
+﻿using Discord.WebSocket;
 using System;
 using System.Threading.Tasks;
 
@@ -14,7 +12,15 @@ namespace Discord.Interactions
 			if (amblflecasm.Program.IsUserLeme(context.User as SocketUser))
 				return PreconditionResult.FromSuccess();
 			else
+			{
+				try
+				{
+					await context.Interaction.RespondAsync("leme only");
+				}
+				catch (Exception) { }
+
 				return PreconditionResult.FromError("Not leme");
+			}
 		}
 	}
 }

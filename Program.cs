@@ -30,6 +30,7 @@ namespace amblflecasm
 		private Dictionary<ulong, string> webhookLookups = null;
 		private Dictionary<int, string> userFlagLookups;
 		private static List<string> denials;
+		private static string randomChars;
 
 		/*
 		 * Config Setup
@@ -72,7 +73,6 @@ namespace amblflecasm
 							break;
 						}
 
-
 				nextIndex++;
 			}
 
@@ -92,6 +92,19 @@ namespace amblflecasm
 		public static string GetRandomDenial()
 		{
 			return denials[rng.Next(denials.Count)];
+		}
+
+		public static string GetRandomString(int length = 10)
+		{
+			string s = string.Empty;
+
+			if (length < 1)
+				return s;
+
+			for (int i = 1; i <= length; i++)
+				s = s + randomChars[rng.Next(randomChars.Length)];
+
+			return s;
 		}
 
 		public static bool IsUserLeme(SocketUser socketUser)
@@ -128,7 +141,7 @@ namespace amblflecasm
 
 					if (!ulong.TryParse(jproperty.Name, out ID))
 					{
-						Log("Failed to register webhook '" + jproperty.Name + "'", "UpdateWebhooks");
+						Log("Failed to register webhook '" + jproperty.Name + "'", "UpdateWebhooks", LogSeverity.Error);
 						continue;
 					}
 
@@ -188,19 +201,24 @@ namespace amblflecasm
 				IResult result = await interactionService.ExecuteCommandAsync(new SocketInteractionContext(socketClient, interaction), serviceProvider);
 
 				if (!result.IsSuccess)
+				{
 					try
 					{
 						await interaction.RespondAsync("Something broke. Dumbfuck leme");
 					}
 					catch (Exception) { }
-					
+
+					Log(result.ErrorReason, "ClientInteractionHandler", LogSeverity.Error);
+				}
 			} catch (Exception ex)
 			{
 				try
 				{
-					await interaction.RespondAsync("Something broke. Dumbfuck leme");
+					await interaction.RespondAsync("Something seriously broke. Dumbfuck leme");
 				}
 				catch (Exception) { }
+
+				Log(ex.ToString(), "ClientInteractionHandler", LogSeverity.Error);
 			}
 		}
 
@@ -297,6 +315,8 @@ namespace amblflecasm
 				"Nah",
 				"Nop"
 			};
+
+			randomChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"; // Lazy
 
 			socketConfig = new DiscordSocketConfig
 			{
