@@ -147,7 +147,7 @@ Shifted Text: `{1}`",
 				await this.ModifyOriginalResponseAsync(message => message.Embed = embedBuilder.Build());
 			}
 
-			[SlashCommand("decode", "Keyword cipher encode", false, RunMode.Async)]
+			[SlashCommand("decode", "Keyword cipher decode", false, RunMode.Async)]
 			public async Task KeywordDecode(string keyword, string text)
 			{
 				EmbedBuilder embedBuilder = new EmbedBuilder()
