@@ -7,7 +7,7 @@ namespace amblflecasm.Data.Commands
 {
 	public class poof : InteractionModuleBase<SocketInteractionContext>
 	{
-		[RequireUser("Stormy")]
+		//[RequireUser("Stormy")] // Funny reply
 		[SlashCommand("poof", "What poof do you have of that?", false, RunMode.Async)]
 		public async Task Poof()
 		{
@@ -15,6 +15,12 @@ namespace amblflecasm.Data.Commands
 			if (guildUser == null)
 			{
 				await this.RespondAsync("How did you manage this");
+				return;
+			}
+
+			if (!Program.IsUser(this.Context.User, "Stormy"))
+			{
+				await this.RespondWithFileAsync(Program.GetConfigData("FilePaths", "AHHHHHHHHHHHHHHH").ToString(), "poof.mp3");
 				return;
 			}
 
