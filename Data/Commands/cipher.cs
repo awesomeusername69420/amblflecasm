@@ -22,7 +22,7 @@ namespace amblflecasm.Data.Commands
 			return (int)(num1 - num2 * Math.Floor(num1 / num2));
 		}
 
-		[SlashCommand("caesarshift", "Caesar shift cipher", false, RunMode.Async)]
+		[SlashCommand("caesarshift", "Caesar shift", false, RunMode.Async)]
 		public async Task CaesarShift(string text, int amount)
 		{
 			amount = FloorMod(amount, alphabet.Count);
@@ -105,7 +105,7 @@ Shifted Text: `{1}`",
 				return newAlphabet;
 			}
 
-			[SlashCommand("encode", "Keyword cipher encode", false, RunMode.Async)]
+			[SlashCommand("encode", "Keyword encode", false, RunMode.Async)]
 			public async Task KeywordEncode(string keyword, string text)
 			{
 				EmbedBuilder embedBuilder = new EmbedBuilder()
@@ -147,7 +147,7 @@ Shifted Text: `{1}`",
 				await this.ModifyOriginalResponseAsync(message => message.Embed = embedBuilder.Build());
 			}
 
-			[SlashCommand("decode", "Keyword cipher decode", false, RunMode.Async)]
+			[SlashCommand("decode", "Keyword decode", false, RunMode.Async)]
 			public async Task KeywordDecode(string keyword, string text)
 			{
 				EmbedBuilder embedBuilder = new EmbedBuilder()

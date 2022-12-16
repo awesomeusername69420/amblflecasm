@@ -107,20 +107,21 @@ namespace amblflecasm
 			return s;
 		}
 
-		public static bool IsUserLeme(SocketUser socketUser)
+		public static bool IsUser(SocketUser socketUser, string userType)
 		{
 			if (socketUser == null) return false;
 
 			try
 			{
-				JArray lemes = (JArray)GetConfigData("Users", "leme");
+				JArray lemes = (JArray)GetConfigData("Users", userType);
 				List<ulong> ulemes = lemes.ToObject<List<ulong>>();
 
 				foreach (ulong id in ulemes)
 					if (socketUser.Id == id) return true;
 
 				return false;
-			} catch (Exception)
+			}
+			catch (Exception)
 			{
 				return false;
 			}

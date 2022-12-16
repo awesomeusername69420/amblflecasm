@@ -8,7 +8,7 @@ namespace amblflecasm.Data.Commands
 {
 	public class hey : InteractionModuleBase<SocketInteractionContext>
 	{
-		[RequireLeme]
+		[RequireUser("leme")]
 		[SlashCommand("hey", "Hey man", false, RunMode.Async)]
 		public async Task Hey(int amount = 1)
 		{

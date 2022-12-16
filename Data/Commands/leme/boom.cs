@@ -8,7 +8,7 @@ namespace amblflecasm.Data.Commands
 {
 	public class boom : InteractionModuleBase<SocketInteractionContext>
 	{
-		[RequireLeme]
+		[RequireUser("leme")]
 		[SlashCommand("boom", "Vine BOOM", false, RunMode.Async)]
 		public async Task Boom(SocketUser target, int amount = 10)
 		{

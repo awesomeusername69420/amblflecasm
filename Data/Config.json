@@ -25,15 +25,25 @@
 
 	"Webhooks": [
 		{
-			
+			"": ""
 		}
 	],
 
 	"Users": [
 		{
 			"leme": [
-				
+				""
+			],
+
+			"Stormy": [
+				""
 			]
+		}
+	],
+
+	"FilePaths": [
+		{
+			"poof": ""
 		}
 	]
 }

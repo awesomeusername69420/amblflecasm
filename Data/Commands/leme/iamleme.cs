@@ -8,15 +8,10 @@ namespace amblflecasm.Data.Commands
 {
 	public class iamleme : InteractionModuleBase<SocketInteractionContext>
 	{
-		[SlashCommand("iamleme", "No you're not", false, RunMode.Async)] // This doesn't get the [RequireLeme] because funny response
+		[RequireUser("leme")]
+		[SlashCommand("iamleme", "No you're not", false, RunMode.Async)]
 		public async Task IAmLeme()
 		{
-			if (!Program.IsUserLeme(this.Context.User))
-			{
-				await this.RespondAsync("No you're not");
-				return;
-			}
-
 			IGuildUser guildUser = this.Context.User as IGuildUser;
 			if (guildUser == null)
 			{

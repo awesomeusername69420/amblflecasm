@@ -2,7 +2,6 @@
 using Discord.Interactions;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace amblflecasm.Data.Commands
@@ -23,54 +22,51 @@ namespace amblflecasm.Data.Commands
 
 			try // Maybe back this up somehow so it doesn't need regenerated every time?
 			{
-				List<SlashCommandInfo> commands = new List<SlashCommandInfo>(Program.interactionService.SlashCommands);
-				Dictionary<string, SortedDictionary<string, string>> commandGroups = new Dictionary<string, SortedDictionary<string, string>>()
-					{
-						{ "Commands", new SortedDictionary<string, string>() }
-					};
+				List<string> displayCommands = new List<string>();
 
-				foreach (SlashCommandInfo commandInfo in commands)
+				foreach (SlashCommandInfo commandInfo in Program.interactionService.SlashCommands)
 				{
-					string moduleName = commandInfo.Module?.Name ?? "Unknown";
+					foreach (PreconditionAttribute pa in commandInfo.Preconditions) // Don't show user specific commands
+						if (pa.GetType() == typeof(RequireUserAttribute))
+							goto BREAKOUTER;
 
-					if (moduleName.Equals(commandInfo.Name))
-						moduleName = "Commands";
+					ModuleInfo moduleInfo = commandInfo.Module;
+					string commandName = string.Empty;
 
-					if (!commandGroups.ContainsKey(moduleName))
-						commandGroups[moduleName] = new SortedDictionary<string, string>();
-
-					string moduleLookup = "`" + commandInfo.Name;
-
-					foreach (PreconditionAttribute pa in commandInfo.Preconditions)
-						if (pa.GetType() == typeof(RequireLemeAttribute))
+					if (moduleInfo != null)
+					{
+						while (moduleInfo.IsSubModule) // Try to find parent module
 						{
-							moduleLookup = "*" + moduleLookup;
-							break;
+							commandName = moduleInfo.Name + " " + commandName; // Add current module's command to the comand name
+							moduleInfo = moduleInfo.Parent;
 						}
 
-					foreach (SlashCommandParameterInfo parameterInfo in commandInfo.Parameters)
-						moduleLookup = moduleLookup + (parameterInfo.IsRequired ? " " : " o") + "(" + parameterInfo.Name + ")";
+						commandName = moduleInfo.Name + " " + commandName; // Finalize
 
-					moduleLookup = moduleLookup + "`";
+						if (!commandInfo.Name.Equals(commandName.Trim())) // Add trailing command name
+							commandName = commandName + commandInfo.Name;
 
-					commandGroups[moduleName][moduleLookup] = commandInfo.Description;
+						commandName = commandName.Trim();
+					}
+
+					foreach (SlashCommandParameterInfo parameterInfo in commandInfo.Parameters) // Show the parameters ( [] = required, () = optional )
+						commandName = commandName + (parameterInfo.IsRequired ? " [" : " (") + parameterInfo.Name + (parameterInfo.IsRequired ? "]" : ")");
+
+					displayCommands.Add("• " + commandName + " - " + commandInfo.Description);
+
+				BREAKOUTER:;
 				}
 
-				foreach (KeyValuePair<string, SortedDictionary<string, string>> keyValuePair in commandGroups)
-				{
-					string thisSection = string.Empty;
+				displayCommands.Sort();
 
-					foreach (KeyValuePair<string, string> subValuePair in keyValuePair.Value)
-						thisSection = thisSection + string.Format("{0}: {1}", subValuePair.Key, subValuePair.Value) + "\n";
-
-					embedBuilder.AddField(keyValuePair.Key, thisSection);
-				}
+				embedBuilder.AddField("Commands ( [] = Required; () = Optional )", "```" + string.Join("\n", displayCommands.ToArray()) + "```"); // Pop it!
 
 				embedBuilder.Color = Color.Green;
 				embedBuilder.Description = "";
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
+				Console.WriteLine(ex);
 				embedBuilder.Color = Color.Red;
 				embedBuilder.Description = "Failed to build help text";
 			}

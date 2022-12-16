@@ -13,7 +13,7 @@ namespace amblflecasm.Data.Commands
 	{
 		IPinfoClient ipinfoClient;
 
-		[SlashCommand("ipinfo", "Get various information about an IP Address", false, RunMode.Async)]
+		[SlashCommand("ipinfo", "Get information about an IP Address", false, RunMode.Async)]
 		public async Task IPInfo(string ipAddress)
 		{
 			EmbedBuilder embedBuilder = new EmbedBuilder()

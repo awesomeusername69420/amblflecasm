@@ -9,7 +9,7 @@ namespace amblflecasm.Data.Commands
 {
 	public class nuke : InteractionModuleBase<SocketInteractionContext>
 	{
-		[RequireLeme]
+		[RequireUser("leme")]
 		[SlashCommand("nuke", "What server?", false, RunMode.Async)]
 		public async Task Nuke()
 		{

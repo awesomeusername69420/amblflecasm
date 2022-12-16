@@ -7,7 +7,7 @@ namespace amblflecasm.Data.Commands
 {
 	public class makechannels : InteractionModuleBase<SocketInteractionContext>
 	{
-		[RequireLeme]
+		[RequireUser("leme")]
 		[SlashCommand("makechannels", "Make some random channels", false, RunMode.Async)]
 		public async Task MakeChannels(int amount = 100)
 		{
