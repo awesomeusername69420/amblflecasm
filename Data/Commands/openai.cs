@@ -127,7 +127,7 @@ namespace amblflecasm.Data.Commands
 		}
 
 		[SlashCommand("images", "Image generation", false, RunMode.Async)]
-		public async Task Images(string query, imageSizes size = imageSizes.Medium, imageCount count = imageCount.One)
+		public async Task Images(string query, imageSizes size = imageSizes.Medium/*, imageCount count = imageCount.One*/)
 		{
 			EmbedBuilder embedBuilder = new EmbedBuilder()
 				.WithTitle("Working")
@@ -146,7 +146,7 @@ namespace amblflecasm.Data.Commands
 			}
 
 			int isize = GetImageSize(size);
-			int icount = GetImageCount(count);
+			int icount = GetImageCount(imageCount.One); // TODO: Restore this one day
 
 			try
 			{
