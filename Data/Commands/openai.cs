@@ -1,14 +1,10 @@
 ﻿using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OpenAI_API;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -20,6 +16,53 @@ namespace amblflecasm.Data.Commands
 	public class openai : InteractionModuleBase<SocketInteractionContext>
 	{
 		OpenAIAPI api;
+
+		public enum imageSizes
+		{
+			Small,
+			Medium,
+			Large
+		}
+
+		public enum imageCount
+		{
+			One,
+			Two,
+			Three,
+			Four
+		}
+
+		private int GetImageSize(imageSizes size)
+		{
+			switch (size)
+			{
+				case imageSizes.Small:
+					return 256;
+				case imageSizes.Medium:
+					return 512;
+				case imageSizes.Large:
+					return 1024;
+				default:
+					return 256;
+			}
+		}
+
+		private int GetImageCount(imageCount count)
+		{
+			switch (count)
+			{
+				case imageCount.One:
+					return 1;
+				case imageCount.Two:
+					return 2;
+				case imageCount.Three:
+					return 3;
+				case imageCount.Four:
+					return 4;
+				default:
+					return 1;
+			}
+		}
 
 		private async Task<bool> BuildClient()
 		{
@@ -72,7 +115,7 @@ namespace amblflecasm.Data.Commands
 
 				embedBuilder.Footer = new EmbedFooterBuilder()
 				{
-					Text = string.Format("OpenAPI completion for '{0}'", query)
+					Text = string.Format("OpenAI completion for '{0}'", query)
 				};
 			}
 			catch (Exception)
@@ -84,7 +127,7 @@ namespace amblflecasm.Data.Commands
 		}
 
 		[SlashCommand("images", "Image generation", false, RunMode.Async)]
-		public async Task Images(string query, int size = 512)
+		public async Task Images(string query, imageSizes size = imageSizes.Medium, imageCount count = imageCount.One)
 		{
 			EmbedBuilder embedBuilder = new EmbedBuilder()
 				.WithTitle("Working")
@@ -102,47 +145,59 @@ namespace amblflecasm.Data.Commands
 				return;
 			}
 
-			size = Program.Clamp(Program.CeilPower(size), 256, 1024);
+			int isize = GetImageSize(size);
+			int icount = GetImageCount(count);
 
 			try
 			{
-				string imageData = string.Empty;
-
 				HttpClient client = new HttpClient();
 				client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Program.GetConfigData("Tokens", "OpenAI").ToString());
 
-				Dictionary<string, string> data = new Dictionary<string, string>()
+				Dictionary<string, object> data = new Dictionary<string, object>()
 				{
 					{ "prompt", query },
-					{ "size", "512x512" }
+					{ "size", isize + "x" + isize },
+					{ "n", icount }
 				};
 
 				StringContent content = new StringContent(JsonConvert.SerializeObject(data).ToString(), Encoding.UTF8, "application/json");
 				HttpResponseMessage response = await client.PostAsync("https://api.openai.com/v1/images/generations", content);
+
+				string imageData = string.Empty;
 				imageData = await response.Content.ReadAsStringAsync();
 
-				if (!imageData.Equals(string.Empty))
+				if (!imageData.Equals(string.Empty)) // Generate the embeds
 				{
 					dynamic imageResponse = JsonConvert.DeserializeObject(imageData);
+
+					List<EmbedBuilder> embeds = new List<EmbedBuilder>();
 
 					if (Program.ObjectIsJArray(imageResponse.data))
 						foreach (JObject jobject in (JArray)imageResponse.data)
 							foreach (JProperty jproperty in jobject.Properties())
-								embedBuilder.ImageUrl = jproperty.Value.ToString();
+								embeds.Add(new EmbedBuilder().WithUrl("https://openai.com/").WithImageUrl(jproperty.Value?.ToString() ?? null));
 
-					if (embedBuilder.ImageUrl == null) // Likely blocked
+					if (embeds[0].ImageUrl == null) // Likely blocked since no image was set here
 					{
 						embedBuilder.Description = "Failed to generate (Most likely blocked)";
 						goto OUTPUT;
 					}
-						
-					embedBuilder.Color = Color.Green;
-					embedBuilder.Description = "";
 
-					embedBuilder.Footer = new EmbedFooterBuilder()
+					embeds[0].Color = Color.Green; // Pretty it up
+					embeds[0].Description = "";
+					embeds[0].Footer = new EmbedFooterBuilder()
 					{
-						Text = string.Format("OpenAPI images for '{0}'", query)
+						Text = string.Format("OpenAI images for '{0}'", query)
 					};
+
+					Embed[] embedsArray = new Embed[icount]; // Build the embeds into an array
+
+					for (int i = 0; i < embeds.Count; i++)
+						embedsArray[i] = embeds[i].Build();
+
+					await this.ModifyOriginalResponseAsync(message => message.Embeds = embedsArray);
+
+					return;
 				}
 				else
 					throw new Exception("Nice images retard");

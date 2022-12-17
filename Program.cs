@@ -98,11 +98,6 @@ namespace amblflecasm
 			return x;
 		}
 
-		public static int CeilPower(int x)
-		{
-			return (int)Math.Pow(2, Math.Ceiling(Math.Log(x) / Math.Log(2)));
-		}
-
 		public static int FloorMod(object a, object b) // Regular modulo doesn't like negative numbers
 		{
 			double num1 = 1;
