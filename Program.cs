@@ -84,6 +84,36 @@ namespace amblflecasm
 		 * Globals
 		 */
 
+		public static int Clamp(int x, int min = int.MinValue, int max = int.MaxValue)
+		{
+			if (x < min) return min;
+			if (x > max) return max;
+			return x;
+		}
+
+		public static double Clamp(double x, double min = double.MinValue, double max = double.MaxValue)
+		{
+			if (x < min) return min;
+			if (x > max) return max;
+			return x;
+		}
+
+		public static int CeilPower(int x)
+		{
+			return (int)Math.Pow(2, Math.Ceiling(Math.Log(x) / Math.Log(2)));
+		}
+
+		public static int FloorMod(object a, object b) // Regular modulo doesn't like negative numbers
+		{
+			double num1 = 1;
+			double num2 = 1;
+
+			double.TryParse(a.ToString(), out num1);
+			double.TryParse(b.ToString(), out num2);
+
+			return (int)(num1 - num2 * Math.Floor(num1 / num2));
+		}
+
 		public static string AutoPlural(string message, int x)
 		{
 			return x == 1 ? message : message + "s";

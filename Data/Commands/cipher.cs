@@ -11,21 +11,10 @@ namespace amblflecasm.Data.Commands
 	{
 		private static List<char> alphabet = new List<char>() { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
 
-		private static int FloorMod(object a, object b) // Regular modulo doesn't like negative numbers
-		{
-			double num1 = 1;
-			double num2 = 1;
-
-			double.TryParse(a.ToString(), out num1);
-			double.TryParse(b.ToString(), out num2);
-
-			return (int)(num1 - num2 * Math.Floor(num1 / num2));
-		}
-
 		[SlashCommand("caesarshift", "Caesar shift", false, RunMode.Async)]
 		public async Task CaesarShift(string text, int amount)
 		{
-			amount = FloorMod(amount, alphabet.Count);
+			amount = Program.FloorMod(amount, alphabet.Count);
 
 			EmbedBuilder embedBuilder = new EmbedBuilder()
 				.WithTitle("Working")
@@ -50,7 +39,7 @@ namespace amblflecasm.Data.Commands
 						continue;
 					}
 
-					char newChar = alphabet[FloorMod(curIndex + amount, alphabet.Count)];
+					char newChar = alphabet[Program.FloorMod(curIndex + amount, alphabet.Count)];
 
 					if (!isUpper)
 						newChar = Char.ToLower(newChar);

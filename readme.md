@@ -15,6 +15,7 @@ Nuget Packages:
  - Microsoft.Extensions.Options 7.0.0.0
  - Microsoft.Extensions.Primitives 7.0.0.0
  - Newtonsoft.Json 13.0.0.0
+ - OpenAI_API 1.2.0.0
  - Steam.Models 1.0.0.0
  - SteamWebAPI2 4.4.0.0
  - System.Buffers 4.0.3.0
