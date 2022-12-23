@@ -8,6 +8,8 @@ using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using SteamIDs_Engine;
+using System.Text;
 
 namespace amblflecasm.Data.Commands
 {
@@ -68,18 +70,19 @@ namespace amblflecasm.Data.Commands
 
 					if (steamID.Contains(":"))
 					{
+						ulong id = 0;
+
 						if (steamID.Contains("["))
-							steamID = steamID.Replace("[", string.Empty).Replace("]", string.Empty); // Why does this one have brackets??
+							id = ulong.Parse(SteamIDConvert.Steam32ToSteam64(steamID).ToString()); // Why does this one have brackets??
+						else
+						{
+							StringBuilder builder = new StringBuilder(steamID);
+							builder[6] = '0'; // This library errors if the universe isn't 0 :(
 
-						string[] steamIDSplit = steamID.Split(':');
-						string accountIDString = steamIDSplit[steamIDSplit.Length - 1]; // Account ID is the last part
+							id = ulong.Parse(SteamIDConvert.Steam2ToSteam64(builder.ToString()).ToString());
+						}
 
-						uint accountID = uint.Parse(accountIDString);
-
-						if (steamID.Contains("STEAM_")) // Regular Steam ID's need to be doubled for whatever reason
-							accountID = accountID * 2;
-
-						steamIDObject = new SteamId(accountID);
+						steamIDObject = new SteamId(id);
 					}
 					else // Assume 64
 						steamIDObject = new SteamId(ulong.Parse(steamID));
@@ -94,7 +97,7 @@ namespace amblflecasm.Data.Commands
 
 				ISteamWebResponse<PlayerSummaryModel> playerSummaryResponse = await steamWebInterface.GetPlayerSummaryAsync(steamIDObject.To64Bit());
 				
-				if (playerSummaryResponse.Data == null)
+				if (playerSummaryResponse?.Data == null)
 					throw new Exception();
 
 				embedBuilder.Color = Color.Green;
